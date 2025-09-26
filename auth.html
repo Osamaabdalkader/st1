@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول / إنشاء حساب</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">نظام الإحالة</div>
+            <ul>
+                <li><a href="index.html">الرئيسية</a></li>
+                <li><a href="auth.html" class="active">تسجيل الدخول</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="auth-container">
+        <div class="auth-form">
+            <h2 id="form-title">تسجيل الدخول</h2>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email">البريد الإلكتروني</label>
+                    <input type="email" id="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">كلمة المرور</label>
+                    <input type="password" id="password" required>
+                </div>
+                
+                <button type="submit" class="btn-primary">تسجيل الدخول</button>
+            </form>
+
+            <form id="signup-form" style="display: none;">
+                <div class="form-group">
+                    <label for="signup-email">البريد الإلكتروني</label>
+                    <input type="email" id="signup-email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-password">كلمة المرور</label>
+                    <input type="password" id="signup-password" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="referral-code">كود الإحالة (اختياري)</label>
+                    <input type="text" id="referral-code">
+                </div>
+                
+                <button type="submit" class="btn-primary">إنشاء حساب</button>
+            </form>
+
+            <div class="auth-switch">
+                <p id="switch-text">ليس لديك حساب؟ <a href="#" id="switch-link">إنشاء حساب</a></p>
+            </div>
+
+            <div id="auth-message" class="message"></div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>

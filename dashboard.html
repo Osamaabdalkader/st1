@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - نظام الإحالة</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">نظام الإحالة</div>
+            <ul>
+                <li><a href="index.html">الرئيسية</a></li>
+                <li><a href="dashboard.html" class="active">لوحة التحكم</a></li>
+                <li><a href="#" id="logout-btn">تسجيل الخروج</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="dashboard">
+        <div class="dashboard-header">
+            <h1>لوحة التحكم</h1>
+            <p>مرحباً بك، <span id="user-email"></span></p>
+        </div>
+
+        <div class="dashboard-content">
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <h3>كود الإحالة الخاص بك</h3>
+                    <div class="referral-code" id="user-referral-code">جاري التحميل...</div>
+                    <button id="copy-referral-code" class="btn-secondary">نسخ الكود</button>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>إجمالي المشتركين</h3>
+                    <div class="stat-number" id="total-referrals">0</div>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>المستوى الأول</h3>
+                    <div class="stat-number" id="level1-referrals">0</div>
+                </div>
+            </div>
+
+            <div class="referral-network">
+                <h2>شبكة الإحالة الخاصة بك</h2>
+                <div class="network-levels">
+                    <div class="level" id="level-1">
+                        <h3>المستوى الأول</h3>
+                        <div class="referrals-list" id="level1-list"></div>
+                    </div>
+                    <div class="level" id="level-2">
+                        <h3>المستوى الثاني</h3>
+                        <div class="referrals-list" id="level2-list"></div>
+                    </div>
+                    <div class="level" id="level-3">
+                        <h3>المستوى الثالث</h3>
+                        <div class="referrals-list" id="level3-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
