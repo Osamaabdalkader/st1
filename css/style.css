@@ -81,6 +81,127 @@ footer {
     padding: 1rem;
 }
 
+
+
+/* أنماط إضافية للوحة التحكم */
+.empty-state {
+    text-align: center;
+    color: #6b7280;
+    padding: 2rem;
+    font-style: italic;
+}
+
+.referral-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.referral-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.referral-number {
+    background: #4f46e5;
+    color: white;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+}
+
+.referral-email {
+    color: #1f2937;
+}
+
+.referral-details {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.referral-details small {
+    color: #6b7280;
+}
+
+.view-sub-referrals {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    margin-top: 0.5rem;
+}
+
+.view-sub-referrals:hover {
+    background: #059669;
+}
+
+/* تحسين التصميم للشاشات الصغيرة */
+@media (max-width: 768px) {
+    .referral-details {
+        flex-direction: column;
+    }
+    
+    .referral-details small {
+        margin-bottom: 0.25rem;
+    }
+    
+    .network-levels {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* أنماط البطاقات الإحصائية */
+.stats-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.stat-card h3 {
+    color: #6b7280;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #4f46e5;
+}
+
+.referral-code {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #4f46e5;
+    background: #f0f4ff;
+    padding: 0.5rem;
+    border-radius: 5px;
+    margin: 1rem 0;
+}
+
+
+
 /* الصفحة الرئيسية */
 .hero {
     text-align: center;
