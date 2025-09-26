@@ -1,53 +1,57 @@
-// js/dashboard.js - مكتمل
-document.addEventListener('DOMContentLoaded', async function() {
-    // فحص التهيئة
-    if (!window.supabaseClient) {
-        console.error('Supabase client is not initialized!');
-        window.location.href = 'auth.html';
-        return;
-    }
-
-    // التحقق من جلسة المستخدم
-    const { data: { session }, error } = await window.supabaseClient.auth.getSession();
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Dashboard page loaded');
     
-    if (!session) {
-        window.location.href = 'auth.html';
-        return;
-    }
-    
-    console.log('User session:', session);
-    
-    // تعيين بيانات المستخدم
-    document.getElementById('user-email').textContent = session.user.email;
-    
-    // تحميل البيانات
-    await loadUserData(session.user.id);
-    await loadReferralNetwork(session.user.id);
-    
-    // إعداد زر تسجيل الخروج
-    document.getElementById('logout-btn').addEventListener('click', async function() {
-        const { error } = await window.supabaseClient.auth.signOut();
-        if (!error) {
-            window.location.href = 'index.html';
-        }
-    });
-    
-    // إعداد زر نسخ كود الإحالة
-    document.getElementById('copy-referral-code').addEventListener('click', function() {
-        const referralCode = document.getElementById('user-referral-code').textContent;
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(referralCode).then(function() {
-                showTempMessage('تم نسخ كود الإحالة بنجاح!', 'success');
-            }).catch(function() {
-                copyFallback(referralCode);
-            });
-        } else {
-            copyFallback(referralCode);
-        }
-    });
+    // الانتظار لضمان تحميل Supabase
+    setTimeout(initializeDashboard, 100);
 });
 
-// تحميل بيانات المستخدم
+function initializeDashboard() {
+    // محاولة تهيئة Supabase إذا لم يكن موجوداً
+    if (typeof window.supabaseClient === 'undefined') {
+        try {
+            window.supabaseClient = supabase.createClient(
+                'https://twbpfuzvxneuuttilbdh.supabase.co',
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3YnBmdXp2eG5ldXV0dGlsYmRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MTc4NTksImV4cCI6MjA3NDQ5Mzg1OX0.9QjiUIWExB5acoz98tGep0TMxrduM6SeHcpRkDRe2CA'
+            );
+            console.log('Supabase initialized in dashboard');
+        } catch (error) {
+            console.error('Failed to initialize Supabase in dashboard:', error);
+            window.location.href = 'auth.html';
+            return;
+        }
+    }
+
+    checkAuthAndLoadData();
+}
+
+async function checkAuthAndLoadData() {
+    try {
+        const { data: { session }, error } = await window.supabaseClient.auth.getSession();
+        
+        if (error || !session) {
+            console.error('No session found, redirecting to auth');
+            window.location.href = 'auth.html';
+            return;
+        }
+
+        console.log('User session found:', session.user.email);
+        
+        // تعيين بيانات المستخدم
+        document.getElementById('user-email').textContent = session.user.email;
+        
+        // تحميل البيانات
+        await loadUserData(session.user.id);
+        await loadReferralNetwork(session.user.id);
+        
+        // إعداد الأحداث
+        setupEventListeners();
+
+    } catch (error) {
+        console.error('Error in checkAuthAndLoadData:', error);
+        window.location.href = 'auth.html';
+    }
+}
+
 async function loadUserData(userId) {
     try {
         const { data: profile, error } = await window.supabaseClient
@@ -55,34 +59,32 @@ async function loadUserData(userId) {
             .select('referral_code, created_at')
             .eq('id', userId)
             .single();
-            
+
         if (error) {
-            // إذا لم يكن هناك ملف شخصي، إنشاء واحد
-            if (error.code === 'PGRST116') {
+            if (error.code === 'PGRST116') { // لا يوجد سجل
                 await createUserProfile(userId);
-                await loadUserData(userId); // إعادة تحميل البيانات
+                // إعادة المحاولة بعد إنشاء البروفايل
+                setTimeout(() => loadUserData(userId), 1000);
                 return;
             }
             throw error;
         }
-        
+
         document.getElementById('user-referral-code').textContent = profile.referral_code || 'جاري التوليد...';
         
-        // إذا لم يكن هناك كود إحالة، انتظر قليلاً ثم أعد المحاولة
+        // إذا لم يكن هناك كود، إعادة المحاولة بعد قليل
         if (!profile.referral_code) {
-            setTimeout(() => {
-                loadUserData(userId);
-            }, 2000);
+            setTimeout(() => loadUserData(userId), 2000);
         }
-        
-        await calculateReferralStats(userId);
+
+        await loadReferralStats(userId);
+
     } catch (error) {
         console.error('Error loading user data:', error);
         document.getElementById('user-referral-code').textContent = 'خطأ في التحميل';
     }
 }
 
-// إنشاء ملف شخصي للمستخدم
 async function createUserProfile(userId) {
     try {
         const { data: { user } } = await window.supabaseClient.auth.getUser();
@@ -96,7 +98,7 @@ async function createUserProfile(userId) {
                     created_at: new Date().toISOString()
                 }
             ]);
-            
+
         if (error) throw error;
         
         console.log('User profile created successfully');
@@ -105,8 +107,7 @@ async function createUserProfile(userId) {
     }
 }
 
-// حساب إحصائيات الإحالة
-async function calculateReferralStats(userId) {
+async function loadReferralStats(userId) {
     try {
         // المستوى الأول
         const { data: level1, error: level1Error } = await window.supabaseClient
@@ -114,7 +115,7 @@ async function calculateReferralStats(userId) {
             .select('referred_id')
             .eq('referrer_id', userId)
             .eq('level', 1);
-            
+
         if (!level1Error) {
             document.getElementById('level1-referrals').textContent = level1 ? level1.length : 0;
         }
@@ -125,7 +126,7 @@ async function calculateReferralStats(userId) {
             .select('referred_id')
             .eq('referrer_id', userId)
             .eq('level', 2);
-            
+
         if (!level2Error) {
             document.getElementById('level2-referrals').textContent = level2 ? level2.length : 0;
         }
@@ -136,47 +137,43 @@ async function calculateReferralStats(userId) {
             .select('referred_id')
             .eq('referrer_id', userId)
             .eq('level', 3);
-            
+
         if (!level3Error) {
             document.getElementById('level3-referrals').textContent = level3 ? level3.length : 0;
         }
 
-        // إجمالي الإحالات
+        // الإجمالي
         const { data: allReferrals, error: allError } = await window.supabaseClient
             .from('referrals')
             .select('referred_id')
             .eq('referrer_id', userId);
-            
+
         if (!allError) {
             document.getElementById('total-referrals').textContent = allReferrals ? allReferrals.length : 0;
         }
-        
+
     } catch (error) {
-        console.error('Error calculating referral stats:', error);
+        console.error('Error loading referral stats:', error);
     }
 }
 
-// تحميل شبكة الإحالة
 async function loadReferralNetwork(userId) {
     try {
-        // المستوى الأول
-        const level1Referrals = await getReferralsByLevel(userId, 1);
-        displayReferrals('level1-list', level1Referrals, 1);
-        
-        // المستوى الثاني
-        const level2Referrals = await getReferralsByLevel(userId, 2);
-        displayReferrals('level2-list', level2Referrals, 2);
-        
-        // المستوى الثالث
-        const level3Referrals = await getReferralsByLevel(userId, 3);
-        displayReferrals('level3-list', level3Referrals, 3);
-        
+        const [level1, level2, level3] = await Promise.all([
+            getReferralsByLevel(userId, 1),
+            getReferralsByLevel(userId, 2),
+            getReferralsByLevel(userId, 3)
+        ]);
+
+        displayReferrals('level1-list', level1, 1);
+        displayReferrals('level2-list', level2, 2);
+        displayReferrals('level3-list', level3, 3);
+
     } catch (error) {
         console.error('Error loading referral network:', error);
     }
 }
 
-// الحصول على الإحالات حسب المستوى
 async function getReferralsByLevel(userId, level) {
     try {
         const { data, error } = await window.supabaseClient
@@ -188,32 +185,33 @@ async function getReferralsByLevel(userId, level) {
             .eq('referrer_id', userId)
             .eq('level', level)
             .order('created_at', { ascending: false });
-            
+
         if (error) throw error;
         
         return data || [];
+
     } catch (error) {
         console.error(`Error getting level ${level} referrals:`, error);
         return [];
     }
 }
 
-// عرض الإحالات في القائمة
 function displayReferrals(containerId, referrals, level) {
     const container = document.getElementById(containerId);
     
+    if (!container) {
+        console.error(`Container ${containerId} not found`);
+        return;
+    }
+
     if (!referrals || referrals.length === 0) {
         container.innerHTML = '<div class="empty-state">لا توجد إحالات في هذا المستوى</div>';
         return;
     }
-    
+
     let html = '';
     referrals.forEach((referral, index) => {
-        const date = new Date(referral.profiles.created_at).toLocaleDateString('ar-EG', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+        const date = new Date(referral.profiles.created_at).toLocaleDateString('ar-EG');
         
         html += `
             <div class="referral-item">
@@ -223,138 +221,105 @@ function displayReferrals(containerId, referrals, level) {
                 </div>
                 <div class="referral-details">
                     <small>انضم في: ${date}</small>
-                    <small>كود الإحالة: ${referral.profiles.referral_code || 'غير متوفر'}</small>
+                    <small>كود: ${referral.profiles.referral_code || 'غير متوفر'}</small>
                 </div>
-                ${level < 3 ? `<button class="view-sub-referrals" data-user-id="${referral.referred_id}" data-level="${level}">عرض الإحالات التابعة</button>` : ''}
+                ${level < 3 ? `<button class="view-sub-referrals" data-user-id="${referral.referred_id}" data-level="${level}">عرض التابعين</button>` : ''}
             </div>
         `;
     });
-    
+
     container.innerHTML = html;
-    
+
     // إضافة event listeners للأزرار
     if (level < 3) {
         container.querySelectorAll('.view-sub-referrals').forEach(button => {
             button.addEventListener('click', function() {
-                const referredUserId = this.getAttribute('data-user-id');
+                const userId = this.getAttribute('data-user-id');
                 const currentLevel = parseInt(this.getAttribute('data-level'));
-                loadSubReferrals(referredUserId, currentLevel + 1);
+                showSubReferrals(userId, currentLevel + 1);
             });
         });
     }
 }
 
-// تحميل الإحالات التابعة
-async function loadSubReferrals(userId, level) {
+async function showSubReferrals(userId, level) {
     try {
-        const referrals = await getReferralsByLevel(userId, 1); // دائماً المستوى الأول للعضو الفرعي
+        const referrals = await getReferralsByLevel(userId, 1);
         
         if (referrals.length === 0) {
             alert('لا توجد إحالات تابعة لهذا العضو');
             return;
         }
-        
-        // إنشاء نافذة عرض للإحالات التابعة
-        showSubReferralsModal(referrals, level);
+
+        showModal(referrals, level);
         
     } catch (error) {
-        console.error('Error loading sub-referrals:', error);
+        console.error('Error showing sub referrals:', error);
         alert('حدث خطأ في تحميل الإحالات التابعة');
     }
 }
 
-// عرض الإحالات التابعة في نافذة منبثقة
-function showSubReferralsModal(referrals, level) {
+function showModal(referrals, level) {
     const modal = document.createElement('div');
     modal.className = 'modal';
-    modal.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.5);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 1000;
-    `;
-    
-    let modalContent = `
-        <div style="background: white; padding: 20px; border-radius: 10px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
                 <h3>الإحالات التابعة - المستوى ${level}</h3>
-                <button onclick="this.parentElement.parentElement.parentElement.remove()" style="background: none; border: none; font-size: 20px; cursor: pointer;">×</button>
+                <span class="close">&times;</span>
             </div>
-            <div class="referrals-list">
-    `;
-    
-    referrals.forEach((referral, index) => {
-        const date = new Date(referral.profiles.created_at).toLocaleDateString('ar-EG');
-        modalContent += `
-            <div class="referral-item" style="padding: 10px; border-bottom: 1px solid #eee;">
-                <strong>${referral.profiles.email}</strong>
-                <br>
-                <small>انضم في: ${date}</small>
+            <div class="modal-body">
+                ${referrals.map((ref, i) => `
+                    <div class="referral-item">
+                        <strong>${ref.profiles.email}</strong>
+                        <small>انضم في: ${new Date(ref.profiles.created_at).toLocaleDateString('ar-EG')}</small>
+                    </div>
+                `).join('')}
             </div>
-        `;
-    });
-    
-    modalContent += `
-            </div>
-            <button onclick="this.parentElement.parentElement.remove()" style="margin-top: 20px; padding: 10px 20px; background: #4f46e5; color: white; border: none; border-radius: 5px; cursor: pointer;">إغلاق</button>
         </div>
     `;
-    
-    modal.innerHTML = modalContent;
+
+    modal.querySelector('.close').onclick = () => modal.remove();
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+    };
+
     document.body.appendChild(modal);
-    
-    // إغلاق النافذة عند النقر خارجها
-    modal.addEventListener('click', function(e) {
-        if (e.target === modal) {
-            modal.remove();
+}
+
+function setupEventListeners() {
+    // تسجيل الخروج
+    document.getElementById('logout-btn').addEventListener('click', async function() {
+        const { error } = await window.supabaseClient.auth.signOut();
+        if (!error) {
+            window.location.href = 'index.html';
         }
     });
-}
 
-// وظيفة نسخ احتياطية
-function copyFallback(text) {
-    const tempInput = document.createElement('input');
-    tempInput.value = text;
-    document.body.appendChild(tempInput);
-    tempInput.select();
-    document.execCommand('copy');
-    document.body.removeChild(tempInput);
-    showTempMessage('تم نسخ كود الإحالة بنجاح!', 'success');
-}
-
-// عرض رسائل مؤقتة
-function showTempMessage(message, type) {
-    const messageDiv = document.createElement('div');
-    messageDiv.textContent = message;
-    messageDiv.style.cssText = `
-        position: fixed;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 10px 20px;
-        background: ${type === 'success' ? '#10b981' : '#ef4444'};
-        color: white;
-        border-radius: 5px;
-        z-index: 1000;
-    `;
-    
-    document.body.appendChild(messageDiv);
-    
-    setTimeout(() => {
-        messageDiv.remove();
-    }, 3000);
+    // نسخ كود الإحالة
+    document.getElementById('copy-referral-code').addEventListener('click', function() {
+        const code = document.getElementById('user-referral-code').textContent;
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(code).then(() => {
+                alert('تم نسخ كود الإحالة!');
+            });
+        } else {
+            // طريقة بديلة
+            const temp = document.createElement('textarea');
+            temp.value = code;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+            alert('تم نسخ كود الإحالة!');
+        }
+    });
 }
 
 // تحديث البيانات كل 30 ثانية
 setInterval(async () => {
     const { data: { session } } = await window.supabaseClient.auth.getSession();
     if (session) {
-        await calculateReferralStats(session.user.id);
+        await loadReferralStats(session.user.id);
     }
 }, 30000);
