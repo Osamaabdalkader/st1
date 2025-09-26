@@ -1,27 +1,60 @@
-// js/auth.js - محدث وكامل
+// انتظر حتى يتم تحميل كل شيء
 document.addEventListener('DOMContentLoaded', function() {
-    // فحص تهيئة Supabase
-    console.log('Checking Supabase initialization...');
-    console.log('supabase object:', window.supabaseClient);
+    console.log('Auth page loaded');
     
-    if (!window.supabaseClient) {
-        console.error('Supabase client is not initialized!');
-        showMessage('خطأ في تهيئة النظام. يرجى تحديث الصفحة.', 'error');
-        return;
+    // الانتظار قليلاً لضمان تحميل Supabase
+    setTimeout(initializeAuth, 100);
+});
+
+function initializeAuth() {
+    // فحص وجود Supabase
+    if (typeof window.supabaseClient === 'undefined') {
+        console.error('Supabase client is not available!');
+        
+        // محاولة تهيئة Supabase مباشرة
+        try {
+            window.supabaseClient = supabase.createClient(
+                'https://twbpfuzvxneuuttilbdh.supabase.co',
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3YnBmdXp2eG5ldXV0dGlsYmRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MTc4NTksImV4cCI6MjA3NDQ5Mzg1OX0.9QjiUIWExB5acoz98tGep0TMxrduM6SeHcpRkDRe2CA'
+            );
+            console.log('Supabase initialized directly');
+        } catch (error) {
+            console.error('Failed to initialize Supabase:', error);
+            showMessage('خطأ في تحميل النظام. يرجى تحديث الصفحة.', 'error');
+            return;
+        }
     }
 
+    // عناصر DOM
     const loginForm = document.getElementById('login-form');
     const signupForm = document.getElementById('signup-form');
     const formTitle = document.getElementById('form-title');
     const switchText = document.getElementById('switch-text');
     const switchLink = document.getElementById('switch-link');
     const authMessage = document.getElementById('auth-message');
-    
+
+    if (!loginForm || !signupForm) {
+        console.error('Forms not found!');
+        return;
+    }
+
+    console.log('All DOM elements found');
+
     let isLoginMode = true;
-    
-    // وظيفة تبديل النماذج
+
+    // تبديل بين تسجيل الدخول وإنشاء حساب
     switchLink.addEventListener('click', function(e) {
         e.preventDefault();
+        toggleAuthMode();
+    });
+
+    // تسجيل الدخول
+    loginForm.addEventListener('submit', handleLogin);
+
+    // إنشاء حساب
+    signupForm.addEventListener('submit', handleSignup);
+
+    function toggleAuthMode() {
         isLoginMode = !isLoginMode;
         
         if (isLoginMode) {
@@ -36,68 +69,79 @@ document.addEventListener('DOMContentLoaded', function() {
             switchText.innerHTML = 'لديك حساب بالفعل؟ <a href="#" id="switch-link">تسجيل الدخول</a>';
         }
         
-        // إعادة تعيين الرسالة والنماذج
-        authMessage.textContent = '';
-        authMessage.className = 'message';
+        // إعادة تعيين
+        clearMessage();
         loginForm.reset();
         signupForm.reset();
-    });
-    
-    // تسجيل الدخول
-    loginForm.addEventListener('submit', async function(e) {
+    }
+
+    async function handleLogin(e) {
         e.preventDefault();
+        console.log('Login attempt');
         
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
-        
-        // عرض تحميل
+
+        if (!email || !password) {
+            showMessage('يرجى ملء جميع الحقول', 'error');
+            return;
+        }
+
         const submitBtn = loginForm.querySelector('button[type="submit"]');
         const originalText = submitBtn.textContent;
         submitBtn.textContent = 'جاري تسجيل الدخول...';
         submitBtn.disabled = true;
-        
+
         try {
+            console.log('Attempting login with:', email);
+            
             const { data, error } = await window.supabaseClient.auth.signInWithPassword({
                 email: email,
                 password: password
             });
-            
+
             if (error) {
+                console.error('Login error:', error);
                 throw error;
             }
-            
+
+            console.log('Login successful:', data);
             showMessage('تم تسجيل الدخول بنجاح!', 'success');
-            
-            // الانتقال إلى لوحة التحكم بعد ثانية
+
             setTimeout(() => {
                 window.location.href = 'dashboard.html';
             }, 1000);
-            
+
         } catch (error) {
-            console.error('Login error:', error);
-            showMessage(getErrorMessage(error), 'error');
+            console.error('Login failed:', error);
+            showMessage(translateError(error.message), 'error');
         } finally {
-            // إعادة زر الإرسال إلى حالته الأصلية
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
         }
-    });
-    
-    // إنشاء حساب
-    signupForm.addEventListener('submit', async function(e) {
+    }
+
+    async function handleSignup(e) {
         e.preventDefault();
+        console.log('Signup attempt');
         
         const email = document.getElementById('signup-email').value;
         const password = document.getElementById('signup-password').value;
         const referralCode = document.getElementById('referral-code').value;
-        
-        // عرض تحميل
+
+        if (!email || !password) {
+            showMessage('يرجى ملء جميع الحقول الإلزامية', 'error');
+            return;
+        }
+
         const submitBtn = signupForm.querySelector('button[type="submit"]');
         const originalText = submitBtn.textContent;
         submitBtn.textContent = 'جاري إنشاء الحساب...';
         submitBtn.disabled = true;
-        
+
         try {
+            console.log('Attempting signup with:', email);
+            
             const { data, error } = await window.supabaseClient.auth.signUp({
                 email: email,
                 password: password,
@@ -105,69 +149,73 @@ document.addEventListener('DOMContentLoaded', function() {
                     emailRedirectTo: window.location.origin + '/dashboard.html'
                 }
             });
-            
+
             if (error) {
+                console.error('Signup error:', error);
                 throw error;
             }
-            
-            // إنشاء الملف الشخصي للمستخدم
+
+            console.log('Signup successful:', data);
+
+            // إنشاء الملف الشخصي
             if (data.user) {
-                await createUserProfile(data.user.id, data.user.email);
+                await createUserProfile(data.user);
                 
-                // إذا كان هناك كود إحالة، حفظه
-                if (referralCode.trim() !== '') {
-                    await saveReferralCode(data.user.id, referralCode);
+                // معالجة كود الإحالة إذا وجد
+                if (referralCode && referralCode.trim() !== '') {
+                    await processReferral(data.user.id, referralCode);
                 }
             }
-            
-            showMessage('تم إنشاء الحساب بنجاح! يرجى التحقق من بريدك الإلكتروني لتأكيد الحساب.', 'success');
+
+            showMessage('تم إنشاء الحساب بنجاح! يرجى التحقق من بريدك الإلكتروني.', 'success');
             signupForm.reset();
-            
+
         } catch (error) {
-            console.error('Signup error:', error);
-            showMessage(getErrorMessage(error), 'error');
+            console.error('Signup failed:', error);
+            showMessage(translateError(error.message), 'error');
         } finally {
-            // إعادة زر الإرسال إلى حالته الأصلية
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
         }
-    });
-    
-    // وظيفة إنشاء الملف الشخصي
-    async function createUserProfile(userId, email) {
+    }
+
+    async function createUserProfile(user) {
         try {
             const { error } = await window.supabaseClient
                 .from('profiles')
                 .insert([
                     { 
-                        id: userId,
-                        email: email,
+                        id: user.id,
+                        email: user.email,
                         created_at: new Date().toISOString()
                     }
                 ]);
-                
-            if (error) throw error;
-            
+
+            if (error) {
+                console.error('Error creating profile:', error);
+                // لا نرمي الخطأ لأن المستخدم أنشئ بنجاح حتى لو فشل إنشاء البروفايل
+            } else {
+                console.log('Profile created successfully');
+            }
         } catch (error) {
-            console.error('Error creating profile:', error);
-            throw error;
+            console.error('Exception creating profile:', error);
         }
     }
-    
-    // وظيفة حفظ كود الإحالة
-    async function saveReferralCode(userId, referralCode) {
+
+    async function processReferral(userId, referralCode) {
         try {
-            // البحث عن المستخدم الذي يملك كود الإحالة
+            // البحث عن صاحب كود الإحالة
             const { data: referrer, error } = await window.supabaseClient
                 .from('profiles')
                 .select('id')
                 .eq('referral_code', referralCode)
                 .single();
-                
+
             if (error || !referrer) {
-                throw new Error('كود الإحالة غير صحيح');
+                console.warn('Invalid referral code:', referralCode);
+                return;
             }
-            
+
             // حفظ علاقة الإحالة
             const { error: insertError } = await window.supabaseClient
                 .from('referrals')
@@ -179,37 +227,49 @@ document.addEventListener('DOMContentLoaded', function() {
                         created_at: new Date().toISOString()
                     }
                 ]);
-                
-            if (insertError) throw insertError;
-            
+
+            if (insertError) {
+                console.error('Error saving referral:', insertError);
+            } else {
+                console.log('Referral saved successfully');
+            }
         } catch (error) {
-            console.error('Error saving referral:', error);
-            throw error;
+            console.error('Exception processing referral:', error);
         }
     }
-    
-    // وظيفة عرض الرسائل
+
     function showMessage(message, type) {
-        authMessage.textContent = message;
-        authMessage.className = `message ${type}`;
-        authMessage.style.display = 'block';
-        
-        // إخفاء الرسالة بعد 5 ثواني
-        setTimeout(() => {
-            authMessage.style.display = 'none';
-        }, 5000);
+        if (authMessage) {
+            authMessage.textContent = message;
+            authMessage.className = `message ${type}`;
+            authMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                authMessage.style.display = 'none';
+            }, 5000);
+        } else {
+            alert(message); // fallback
+        }
     }
-    
-    // وظيفة ترجمة رسائل الخطأ
-    function getErrorMessage(error) {
-        const errorMessages = {
+
+    function clearMessage() {
+        if (authMessage) {
+            authMessage.textContent = '';
+            authMessage.className = 'message';
+            authMessage.style.display = 'none';
+        }
+    }
+
+    function translateError(errorMessage) {
+        const errorMap = {
             'Invalid login credentials': 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
             'Email not confirmed': 'يرجى تأكيد بريدك الإلكتروني أولاً',
             'User already registered': 'هذا البريد الإلكتروني مسجل بالفعل',
-            'Weak password': 'كلمة المرور ضعيفة جداً',
-            'Invalid email': 'البريد الإلكتروني غير صالح'
+            'Weak password': 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
+            'Invalid email': 'البريد الإلكتروني غير صالح',
+            'To signup, please provide your email and password': 'يرجى إدخال البريد الإلكتروني وكلمة المرور'
         };
         
-        return errorMessages[error.message] || error.message;
+        return errorMap[errorMessage] || errorMessage;
     }
-});
+}
