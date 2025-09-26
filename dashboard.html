@@ -5,66 +5,149 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة التحكم - نظام الإحالة</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <header>
         <nav>
-            <div class="logo">نظام الإحالة</div>
+            <div class="logo">
+                <i class="fas fa-network-wired"></i>
+                نظام الإحالة
+            </div>
             <ul>
                 <li><a href="index.html">الرئيسية</a></li>
                 <li><a href="dashboard.html" class="active">لوحة التحكم</a></li>
-                <li><a href="#" id="logout-btn">تسجيل الخروج</a></li>
+                <li><a href="#" id="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    تسجيل الخروج
+                </a></li>
             </ul>
         </nav>
     </header>
 
     <main class="dashboard">
         <div class="dashboard-header">
-            <h1>لوحة التحكم</h1>
+            <h1><i class="fas fa-tachometer-alt"></i> لوحة التحكم</h1>
             <p>مرحباً بك، <span id="user-email"></span></p>
         </div>
 
         <div class="dashboard-content">
-            <div class="stats-cards">
-                <div class="stat-card">
-                    <h3>كود الإحالة الخاص بك</h3>
-                    <div class="referral-code" id="user-referral-code">جاري التحميل...</div>
-                    <button id="copy-referral-code" class="btn-secondary">نسخ الكود</button>
+            <!-- بطاقات الإحصائيات -->
+            <div class="stats-grid">
+                <div class="stat-card primary">
+                    <div class="stat-icon">
+                        <i class="fas fa-user-friends"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>إجمالي المشتركين</h3>
+                        <div class="stat-number" id="total-referrals">0</div>
+                    </div>
                 </div>
                 
-                <div class="stat-card">
-                    <h3>إجمالي المشتركين</h3>
-                    <div class="stat-number" id="total-referrals">0</div>
+                <div class="stat-card success">
+                    <div class="stat-icon">
+                        <i class="fas fa-level-up-alt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>المستوى الأول</h3>
+                        <div class="stat-number" id="level1-referrals">0</div>
+                    </div>
                 </div>
                 
-                <div class="stat-card">
-                    <h3>المستوى الأول</h3>
-                    <div class="stat-number" id="level1-referrals">0</div>
+                <div class="stat-card warning">
+                    <div class="stat-icon">
+                        <i class="fas fa-level-up-alt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>المستوى الثاني</h3>
+                        <div class="stat-number" id="level2-referrals">0</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card danger">
+                    <div class="stat-icon">
+                        <i class="fas fa-level-up-alt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>المستوى الثالث</h3>
+                        <div class="stat-number" id="level3-referrals">0</div>
+                    </div>
                 </div>
             </div>
 
-            <div class="referral-network">
-                <h2>شبكة الإحالة الخاصة بك</h2>
-                <div class="network-levels">
-                    <div class="level" id="level-1">
-                        <h3>المستوى الأول</h3>
-                        <div class="referrals-list" id="level1-list"></div>
+            <!-- كود الإحالة -->
+            <div class="referral-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-share-alt"></i> كود الإحالة الخاص بك</h2>
+                </div>
+                <div class="referral-code-card">
+                    <div class="referral-code-display">
+                        <span id="user-referral-code">جاري التحميل...</span>
+                        <button id="copy-referral-code" class="btn-copy">
+                            <i class="fas fa-copy"></i> نسخ
+                        </button>
                     </div>
-                    <div class="level" id="level-2">
-                        <h3>المستوى الثاني</h3>
-                        <div class="referrals-list" id="level2-list"></div>
+                    <p class="referral-note">شارك هذا الكود مع أصدقائك لتحصل على عمولات</p>
+                </div>
+            </div>
+
+            <!-- شبكة الإحالة بشكل شجري -->
+            <div class="referral-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-sitemap"></i> شبكة الإحالة</h2>
+                    <button id="toggle-tree-view" class="btn-view">
+                        <i class="fas fa-expand"></i> عرض شجري
+                    </button>
+                </div>
+                <div class="network-container">
+                    <div class="tree-view" id="tree-view">
+                        <!-- سيتم ملؤها بالشجرة -->
                     </div>
-                    <div class="level" id="level-3">
-                        <h3>المستوى الثالث</h3>
-                        <div class="referrals-list" id="level3-list"></div>
+                </div>
+            </div>
+
+            <!-- جدول جميع المحالين -->
+            <div class="referral-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-table"></i> جميع المحالين</h2>
+                    <div class="table-controls">
+                        <input type="text" id="search-referrals" placeholder="بحث في المحالين...">
+                        <select id="level-filter">
+                            <option value="">جميع المستويات</option>
+                            <option value="1">المستوى الأول</option>
+                            <option value="2">المستوى الثاني</option>
+                            <option value="3">المستوى الثالث</option>
+                        </select>
                     </div>
+                </div>
+                <div class="table-container">
+                    <table id="referrals-table" class="modern-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>البريد الإلكتروني</th>
+                                <th>تاريخ الانضمام</th>
+                                <th>المستوى</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="referrals-tbody">
+                            <!-- سيتم ملؤها بالبيانات -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-    <script src="js/supabase.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        window.supabaseClient = supabase.createClient(
+            'https://twbpfuzvxneuuttilbdh.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3YnBmdXp2eG5ldXV0dGlsYmRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MTc4NTksImV4cCI6MjA3NDQ5Mzg1OX0.9QjiUIWExB5acoz98tGep0TMxrduM6SeHcpRkDRe2CA'
+        );
+    </script>
     <script src="js/dashboard.js"></script>
 </body>
-</html>
+                        </html>
